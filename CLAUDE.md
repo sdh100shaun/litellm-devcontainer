@@ -43,7 +43,7 @@ npm test
 npx jest path/to/file.test.ts
 
 # Run devcontainer feature tests
-devcontainer features test --base-image mcr.microsoft.com/devcontainers/base:ubuntu --features src/litellm
+devcontainer features test --base-image mcr.microsoft.com/devcontainers/base:ubuntu --features src/litellm-ollama --test-folder test/litellm-ollama
 ```
 
 ## Tooling
