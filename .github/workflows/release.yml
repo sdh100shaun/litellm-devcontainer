@@ -1,0 +1,41 @@
+# .github/workflows/release.yml
+# Purpose: Publish the litellm-ollama Dev Container Feature to
+#          ghcr.io/sdh100shaun/devcontainer-features on every semver tag.
+#
+# Trigger: push of tags matching v[0-9]+.[0-9]+.[0-9]+
+#          e.g. git tag v1.0.0 && git push --tags
+#
+# The devcontainers/action handles OCI packaging, version tagging, and push
+# to GHCR automatically. GITHUB_TOKEN provides the required write access.
+
+name: "Publish Dev Container Feature"
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  publish:
+    name: Publish to GHCR
+    runs-on: ubuntu-latest
+    # Packages:write is needed to push OCI artifacts to ghcr.io.
+    # Contents:read is needed to check out the repo.
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish feature(s) to GHCR
+        uses: devcontainers/action@v1
+        with:
+          # Publish all features found under ./src/
+          publish-features: "true"
+          base-path-to-features: "./src"
+          # Auto-generate per-feature README.md badges and metadata
+          generate-docs: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
