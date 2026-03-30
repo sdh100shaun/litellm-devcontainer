@@ -123,14 +123,14 @@ Write `/etc/profile.d/litellm-ollama.sh` with LITELLM_PORT, OLLAMA_MODEL, etc.
 
 ## Deliverables Checklist
 
-- [ ] `src/litellm-ollama/devcontainer-feature.json`
-- [ ] `src/litellm-ollama/install.sh` (idempotent, tested on ubuntu:22.04 and debian:bookworm)
-- [ ] `src/litellm-ollama/start-ai-services.sh`
-- [ ] `src/litellm-ollama/README.md` with usage examples and option table
-- [ ] `test/litellm-ollama/test.sh` (bats suite, min 8 tests)
-- [ ] `test/litellm-ollama/scenarios.json`
-- [ ] `.devcontainer/docker-compose.yml` compose variant
-- [ ] `.devcontainer/litellm-config.yaml` compose config template
-- [ ] `.github/workflows/release.yml` OCI publish workflow
-- [ ] `.github/workflows/test.yml` PR test workflow
-- [ ] `README.md` top-level with quick-start and architecture diagram (ASCII)
+- [x] `src/litellm-ollama/devcontainer-feature.json`
+- [x] `src/litellm-ollama/install.sh` (idempotent, POSIX sh, shellcheck clean)
+- [x] `src/litellm-ollama/start-ai-services.sh` (bash, shellcheck clean)
+- [x] `src/litellm-ollama/README.md` with usage examples and option table
+- [x] `test/litellm-ollama/test.sh` (bats suite, 21 tests — well over min 8)
+- [x] `test/litellm-ollama/scenarios.json` (5 scenarios)
+- [x] `.devcontainer/docker-compose.yml` compose variant (service_healthy depends_on)
+- [x] `.devcontainer/litellm-config.yaml` compose config template
+- [x] `.github/workflows/release.yml` OCI publish workflow (semver tags)
+- [x] `.github/workflows/test.yml` PR test workflow (shellcheck + bats + scenarios)
+- [x] `README.md` top-level with quick-start and architecture diagram (ASCII)
