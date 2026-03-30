@@ -1,0 +1,112 @@
+# .devcontainer/docker-compose.yml
+# Purpose: Docker Compose variant of the litellm-ollama devcontainer feature.
+#
+# Use this when you prefer Compose over the feature mechanism, or when you
+# need to run the full stack locally or in CI without building a devcontainer.
+#
+# Services:
+#   ollama  — local LLM runtime; models stored in named volume 'ollama-models'
+#   litellm — OpenAI-compatible proxy; waits for Ollama to be healthy
+#   app     — your application; waits for LiteLLM to be healthy
+#
+# Usage:
+#   docker compose up -d
+#   docker compose down         # stops containers, KEEPS ollama-models volume
+#   docker compose down -v      # stops containers AND removes ollama-models volume
+#
+# Credentials: copy .env.example to .env and fill in API keys before starting.
+# Never commit .env to source control.
+
+version: "3.8"
+
+services:
+
+  # --------------------------------------------------------------------------
+  # ollama — local LLM runtime
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: litellm-ollama
+    restart: unless-stopped
+    volumes:
+      # Named volume: persists models across 'docker compose down'.
+      # Removed only by 'docker compose down -v'.
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      # Ollama exposes /api/tags once its HTTP server is ready.
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # litellm — OpenAI-compatible proxy
+  # Starts only after Ollama is healthy.
+  # --------------------------------------------------------------------------
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy
+    restart: unless-stopped
+    volumes:
+      # Mount the config template from this directory into the container.
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    environment:
+      LITELLM_MASTER_KEY: "${LITELLM_MASTER_KEY:-sk-devcontainer}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-west-2}"
+    command:
+      - "--config"
+      - "/app/config.yaml"
+      - "--port"
+      - "4000"
+      - "--host"
+      - "0.0.0.0"
+    depends_on:
+      ollama:
+        # Design decision: service_healthy ensures LiteLLM never starts before
+        # Ollama is serving traffic, preventing connection-refused errors on boot.
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # app — your application container
+  # Replace the image and build context with your own.
+  # Starts only after LiteLLM is healthy.
+  # --------------------------------------------------------------------------
+  app:
+    # Replace with your own image or build context:
+    #   build: ..
+    #   image: my-app:latest
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    container_name: litellm-app
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      # Point any OpenAI-compatible client at LiteLLM using the service name.
+      LITELLM_BASE_URL: "http://litellm:4000"
+      OPENAI_API_BASE: "http://litellm:4000"
+      OPENAI_API_KEY: "${LITELLM_MASTER_KEY:-sk-devcontainer}"
+    depends_on:
+      litellm:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  # Named volume for Ollama models.
+  # Survives 'docker compose down'; removed only by 'docker compose down -v'.
+  ollama-models:
+    name: litellm_ollama_models
