@@ -48,16 +48,17 @@ wait_for_url() {
     local service="$2"
     local timeout="$3"
     local elapsed=0
+    local poll_interval=2
 
     log "Waiting for ${service} at ${url} (timeout: ${timeout}s)..."
-    while ! curl -sf "${url}" > /dev/null 2>&1; do
+    while ! curl -sf --connect-timeout "${poll_interval}" --max-time "${poll_interval}" "${url}" > /dev/null 2>&1; do
         if [ "${elapsed}" -ge "${timeout}" ]; then
             err "${service} did not become ready within ${timeout}s."
             err "Check logs in ${LOG_DIR}/ for details."
             return 1
         fi
-        sleep 2
-        elapsed=$((elapsed + 2))
+        sleep "${poll_interval}"
+        elapsed=$((elapsed + poll_interval))
     done
     log "${service} is ready (${elapsed}s elapsed)."
 }
