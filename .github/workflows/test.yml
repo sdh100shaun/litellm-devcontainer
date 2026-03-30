@@ -1,0 +1,64 @@
+# .github/workflows/test.yml
+# Purpose: Run the devcontainer feature test suite on every pull request
+#          targeting main. This ensures install.sh and start-ai-services.sh
+#          work correctly before merging.
+#
+# Trigger: pull_request to main
+#
+# The devcontainers/action runs the bats tests in test/litellm-ollama/test.sh
+# against every scenario defined in test/litellm-ollama/scenarios.json, each
+# inside a fresh container image.
+
+name: "Test Dev Container Feature"
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test litellm-ollama feature
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install bats-core
+        # bats is required inside the test runner containers.
+        # The devcontainers/action installs it via the image's package manager,
+        # but we pre-install here to validate the test file syntax early.
+        run: |
+          sudo apt-get install -y bats
+          bats --version
+
+      - name: Validate test file syntax
+        run: bats --count test/litellm-ollama/test.sh
+
+      - name: Validate YAML files
+        run: |
+          python3 -c "import yaml, json
+          yaml.safe_load(open('src/litellm-ollama/devcontainer-feature.json'))
+          print('devcontainer-feature.json: valid JSON')
+          yaml.safe_load(open('.devcontainer/litellm-config.yaml'))
+          print('litellm-config.yaml: valid YAML')"
+
+      - name: Run shellcheck on shell scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck --shell=sh  src/litellm-ollama/install.sh
+          shellcheck --shell=bash src/litellm-ollama/start-ai-services.sh
+          echo "shellcheck: all scripts passed"
+
+      - name: Test feature (all scenarios)
+        uses: devcontainers/action@v1
+        with:
+          base-path-to-features: "./src"
+          features: "litellm-ollama"
+          runTests: "true"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
