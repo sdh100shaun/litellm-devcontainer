@@ -1,0 +1,105 @@
+# .devcontainer/docker-compose.yml
+# Purpose: Docker Compose variant of the litellm-ollama devcontainer feature.
+#
+# Provider pass-through is toggled automatically by environment variables —
+# no YAML editing required. Copy .env.example to .env, add only the keys
+# you want to activate, and restart.
+#
+#   OPENAI_API_KEY set     → gpt-4o, gpt-4o-mini available
+#   ANTHROPIC_API_KEY set  → claude-sonnet, claude-haiku available
+#   AWS_ACCESS_KEY_ID set  → bedrock-claude-* available
+#   (none set)             → Ollama-only, zero cost
+#
+# Services:
+#   ollama  — local LLM runtime; models stored in named volume
+#   litellm — OpenAI-compatible proxy; config generated at startup from env
+#   app     — your application; waits for LiteLLM to be healthy
+#
+# Usage:
+#   docker compose up -d
+#   docker compose down         # stops containers, KEEPS ollama-models volume
+#   docker compose down -v      # stops containers AND removes ollama-models volume
+
+version: "3.8"
+
+services:
+
+  # --------------------------------------------------------------------------
+  # ollama — local LLM runtime
+  # --------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: litellm-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # --------------------------------------------------------------------------
+  # litellm — OpenAI-compatible proxy
+  #
+  # The generate-litellm-config.sh entrypoint script reads the environment,
+  # builds /app/generated-config.yaml including only the providers whose API
+  # keys are present, then execs LiteLLM. No uncommenting required.
+  # --------------------------------------------------------------------------
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm-proxy
+    restart: unless-stopped
+    volumes:
+      - ./generate-litellm-config.sh:/app/generate-litellm-config.sh:ro
+    ports:
+      - "${LITELLM_PORT:-4000}:4000"
+    entrypoint: ["/bin/sh", "/app/generate-litellm-config.sh"]
+    environment:
+      # Required config
+      LITELLM_PORT: "${LITELLM_PORT:-4000}"
+      LITELLM_MASTER_KEY: "${LITELLM_MASTER_KEY:-sk-devcontainer}"
+      OLLAMA_HOST: "http://ollama:11434"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-qwen2.5-coder:7b}"
+      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-west-2}"
+      # Provider toggles — set in .env to enable the provider.
+      # Unset or empty = provider is excluded from the generated config.
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # --------------------------------------------------------------------------
+  # app — your application container
+  # Replace image/build with your own. Starts only after LiteLLM is healthy.
+  # --------------------------------------------------------------------------
+  app:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    container_name: litellm-app
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      LITELLM_BASE_URL: "http://litellm:4000"
+      OPENAI_API_BASE: "http://litellm:4000"
+      OPENAI_API_KEY: "${LITELLM_MASTER_KEY:-sk-devcontainer}"
+    depends_on:
+      litellm:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  ollama-models:
+    name: litellm_ollama_models

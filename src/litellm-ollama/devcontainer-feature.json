@@ -1,0 +1,47 @@
+{
+  "id": "litellm-ollama",
+  "version": "1.0.0",
+  "name": "LiteLLM + Ollama Gateway",
+  "description": "Installs a LiteLLM proxy and Ollama daemon as in-container services. Exposes a unified OpenAI-compatible API at http://localhost:4000.",
+  "documentationURL": "https://github.com/sdh100shaun/litellm-devcontainer",
+  "options": {
+    "ollamaModel": {
+      "type": "string",
+      "default": "qwen2.5-coder:7b",
+      "description": "Ollama model to pull on container start (leave empty to skip auto-pull)."
+    },
+    "litellmVersion": {
+      "type": "string",
+      "default": "latest",
+      "description": "pip version specifier for litellm, e.g. '1.40.0' or 'latest'."
+    },
+    "enableBedrock": {
+      "type": "boolean",
+      "default": false,
+      "description": "Add AWS Bedrock models to the LiteLLM config (requires AWS env vars at runtime)."
+    },
+    "enableAnthropic": {
+      "type": "boolean",
+      "default": false,
+      "description": "Add Anthropic models to the LiteLLM config (requires ANTHROPIC_API_KEY at runtime)."
+    },
+    "enableOpenAI": {
+      "type": "boolean",
+      "default": false,
+      "description": "Add OpenAI models to the LiteLLM config (requires OPENAI_API_KEY at runtime)."
+    },
+    "litellmPort": {
+      "type": "string",
+      "default": "4000",
+      "description": "Port for the LiteLLM proxy."
+    }
+  },
+  "containerEnv": {
+    "LITELLM_BASE_URL": "http://localhost:${litellmPort}",
+    "OPENAI_API_BASE": "http://localhost:${litellmPort}",
+    "OLLAMA_HOST": "http://localhost:11434"
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/python"
+  ]
+}
