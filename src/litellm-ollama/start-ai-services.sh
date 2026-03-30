@@ -164,7 +164,7 @@ log "Services running. Waiting for PIDs Ollama=${OLLAMA_PID} LiteLLM=${LITELLM_P
 
 # Disable set -e for the wait block so we can capture the exit code manually
 set +e
-wait "${OLLAMA_PID}" "${LITELLM_PID}"
+wait -n "${OLLAMA_PID}" "${LITELLM_PID}"
 WAIT_EXIT=$?
 set -e
 
