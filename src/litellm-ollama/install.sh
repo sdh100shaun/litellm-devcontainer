@@ -263,7 +263,7 @@ if [ "${ENABLE_BEDROCK}" = "true" ]; then
     cat >> "${LITELLM_CONFIG_FILE}" << YAML_EOF
   # AWS Bedrock — enabled via enableBedrock option.
   # Requires AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION at runtime.
-  - model_name: "claude-sonnet"
+  - model_name: "bedrock-claude-sonnet"
     litellm_params:
       model: "bedrock/anthropic.claude-sonnet-4-5"
       aws_region_name: "eu-west-2"
