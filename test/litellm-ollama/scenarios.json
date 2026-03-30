@@ -1,0 +1,48 @@
+[
+  {
+    "id": "default",
+    "description": "Default install: qwen2.5-coder:7b model, no cloud providers, port 4000.",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "litellm-ollama": {}
+    }
+  },
+  {
+    "id": "with-openai",
+    "description": "OpenAI provider enabled. Verifies gpt-4o stanza appears in config.",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "litellm-ollama": {
+        "enableOpenAI": true
+      }
+    }
+  },
+  {
+    "id": "with-anthropic",
+    "description": "Anthropic provider enabled. Verifies claude stanza appears in config.",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "litellm-ollama": {
+        "enableAnthropic": true
+      }
+    }
+  },
+  {
+    "id": "custom-port",
+    "description": "Custom port 8080. Verifies LITELLM_PORT env default is updated.",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+      "litellm-ollama": {
+        "litellmPort": "8080"
+      }
+    }
+  },
+  {
+    "id": "debian-bookworm",
+    "description": "Debian bookworm base image — verifies apt-based install.",
+    "image": "mcr.microsoft.com/devcontainers/base:debian",
+    "features": {
+      "litellm-ollama": {}
+    }
+  }
+]
