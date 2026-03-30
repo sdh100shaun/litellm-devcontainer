@@ -41,11 +41,20 @@ jobs:
 
       - name: Validate YAML files
         run: |
-          python3 -c "import yaml, json
-          yaml.safe_load(open('src/litellm-ollama/devcontainer-feature.json'))
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+          python3 << 'PY'
+          import json
+          import yaml
+          
+          with open('src/litellm-ollama/devcontainer-feature.json', 'r', encoding='utf-8') as f:
+              json.load(f)
           print('devcontainer-feature.json: valid JSON')
-          yaml.safe_load(open('.devcontainer/litellm-config.yaml'))
-          print('litellm-config.yaml: valid YAML')"
+          
+          with open('.devcontainer/litellm-config.yaml', 'r', encoding='utf-8') as f:
+              yaml.safe_load(f)
+          print('litellm-config.yaml: valid YAML')
+          PY
 
       - name: Run shellcheck on shell scripts
         run: |
